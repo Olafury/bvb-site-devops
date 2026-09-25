@@ -1,0 +1,45 @@
+# Deploy webhook listener for bvb-site-backend and bvb-site-frontend. Start it with ./deploy/up.sh (it sets DEVOPS_DIR).
+# Variables are read from deploy/.env (see deploy/.env.example).
+name: site-deploy
+
+services:
+  deploy:
+    image: site.deploy
+    container_name: site.deploy
+    restart: always
+    build:
+      context: .
+    working_dir: ${DEVOPS_DIR:?run ./deploy/up.sh or set DEVOPS_DIR}
+    command:
+      - -hooks=${DEVOPS_DIR}/deploy/hooks.json
+      - -template
+      - -verbose
+      - -port=9000
+    # Localhost only: the hooks are published through the reverse proxy as https://deploy.bvb-news.ru.
+    ports:
+      - "127.0.0.1:${DEPLOY_WEBHOOK_PORT:-9000}:9000"
+    environment:
+      - DEVOPS_DIR=${DEVOPS_DIR}
+      - BACKEND_DIR=${BACKEND_DIR:?set BACKEND_DIR in deploy/.env}
+      - BACKEND_BRANCH=${BACKEND_BRANCH:-develop}
+      - FRONTEND_DIR=${FRONTEND_DIR:?set FRONTEND_DIR in deploy/.env}
+      - FRONTEND_BRANCH=${FRONTEND_BRANCH:-main}
+      - DEPLOY_TOKEN=${DEPLOY_TOKEN:?set DEPLOY_TOKEN in deploy/.env}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:?set TELEGRAM_BOT_TOKEN in deploy/.env}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:?set TELEGRAM_CHAT_ID in deploy/.env}
+      - GIT_SSH_COMMAND=ssh -i /run/secrets/git_ssh_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Repositories are mounted at the same absolute paths as on the host so that
+      # `docker compose` inside the container resolves the same project names and paths.
+      - ${DEVOPS_DIR}:${DEVOPS_DIR}:ro
+      - ${BACKEND_DIR}:${BACKEND_DIR}
+      - ${FRONTEND_DIR}:${FRONTEND_DIR}
+      - ${DEPLOY_SSH_KEY:?set DEPLOY_SSH_KEY in deploy/.env}:/run/secrets/git_ssh_key:ro
+    # Shared with the reverse proxy.
+    networks:
+      - site
+
+networks:
+  site:
+    external: true

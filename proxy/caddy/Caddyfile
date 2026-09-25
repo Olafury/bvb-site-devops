@@ -1,0 +1,31 @@
+# Public HTTPS entry point for bvb-site-backend and bvb-site-frontend.
+# Certificates are issued and renewed by Caddy; HTTP is redirected to HTTPS automatically.
+# Upstreams are addressed by container name over the external `site` network.
+# Apply changes without downtime: docker exec site.caddy caddy reload --config /etc/caddy/Caddyfile
+
+bvb-news.ru {
+	@api path /api* /openapi* /scalar* /hub*
+	handle @api {
+		reverse_proxy site.api:8080
+	}
+
+	handle {
+		reverse_proxy site.front:3000
+	}
+}
+
+www.bvb-news.ru {
+	redir https://bvb-news.ru{uri} permanent
+}
+
+storage.bvb-news.ru {
+	reverse_proxy site.minio:9001
+}
+
+ticker.bvb-news.ru {
+	reverse_proxy site.worker:8080
+}
+
+deploy.bvb-news.ru {
+	reverse_proxy site.deploy:9000
+}

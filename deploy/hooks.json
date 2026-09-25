@@ -1,0 +1,40 @@
+[
+  {
+    "id": "deploy-backend",
+    "execute-command": "{{ getenv `DEVOPS_DIR` }}/deploy/deploy.sh",
+    "command-working-directory": "{{ getenv `DEVOPS_DIR` }}",
+    "pass-arguments-to-command": [{ "source": "string", "name": "backend" }],
+    "http-methods": ["POST"],
+    "response-message": "Deploy started",
+    "trigger-rule-mismatch-http-response-code": 401,
+    "trigger-rule": {
+      "match": {
+        "type": "value",
+        "value": "{{ getenv `DEPLOY_TOKEN` }}",
+        "parameter": {
+          "source": "header",
+          "name": "X-Deploy-Token"
+        }
+      }
+    }
+  },
+  {
+    "id": "deploy-frontend",
+    "execute-command": "{{ getenv `DEVOPS_DIR` }}/deploy/deploy.sh",
+    "command-working-directory": "{{ getenv `DEVOPS_DIR` }}",
+    "pass-arguments-to-command": [{ "source": "string", "name": "frontend" }],
+    "http-methods": ["POST"],
+    "response-message": "Deploy started",
+    "trigger-rule-mismatch-http-response-code": 401,
+    "trigger-rule": {
+      "match": {
+        "type": "value",
+        "value": "{{ getenv `DEPLOY_TOKEN` }}",
+        "parameter": {
+          "source": "header",
+          "name": "X-Deploy-Token"
+        }
+      }
+    }
+  }
+]

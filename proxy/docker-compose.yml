@@ -1,0 +1,32 @@
+# Public reverse proxy on ports 80/443. Start it with: docker compose -f proxy/docker-compose.yml up -d
+# Routes are defined in proxy/caddy/Caddyfile.
+name: site-proxy
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: site.caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      # Directory mount: a single-file mount keeps serving the old file after git checkout replaces it.
+      - ./caddy:/etc/caddy:ro
+      # Issued certificates and ACME account; losing it means re-issuing everything.
+      - caddy_data:/data
+      - caddy_config:/config
+    extra_hosts:
+      # Lets the Caddyfile reach services running on the host itself: host.docker.internal:<port>
+      - host.docker.internal:host-gateway
+    networks:
+      - site
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  site:
+    external: true
